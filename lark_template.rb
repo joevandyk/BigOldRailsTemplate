@@ -23,6 +23,8 @@ def commit_state(comment)
   git :commit => "-am '#{comment}'"
 end
 
+template_options = {}
+
 # Piston methods out of my own head
 # sudo gem install piston on your dev box before using these
 # Piston locking support with git requires Piston 2.0.3+
@@ -133,13 +135,6 @@ end
 current_app_name = File.basename(File.expand_path(root))
 
 # Option set-up
-begin
-  template_options = {}
-  open(File.join(File.dirname(template), "config.yml")) do |f|
-    template_options = YAML.load(f)
-  end
-rescue
-end
 
 rails_branch = template_options["rails_branch"]
 rails_branch = "2-3-stable" if rails_branch.nil?
@@ -154,25 +149,17 @@ monitoring = template_options["monitoring"].nil? ? ask("Which monitoring? new_re
 monitoring = "new_relic" if monitoring.nil?
 
 @branch_management = template_options["branch_management"].nil? ? ask("Which branch management? piston (default), braid, git, none").downcase : template_options["branch_management"]
-@branch_management = "piston" if @branch_management.nil?
+@branch_management = "none" if @branch_management.nil?
 
 rails_strategy = template_options["rails_strategy"].nil? ? ask("Which Rails strategy? vendored (default), gem").downcase : template_options["rails_strategy"]
 rails_strategy = "vendored" if rails_strategy.nil?
 
 ie6_blocking = template_options["ie6_blocking"].nil? ? ask("Which IE 6 blocking? none, light (default), ie6nomore").downcase : template_options["ie6_blocking"]
-ie6_blocking = "light" if ie6_blocking.nil?
+ie6_blocking = "ie6nomore" if ie6_blocking.nil?
 
 def install_plugin (name, options)
-  case @branch_management
-  when 'none'
-    plugin name, options
-  when 'piston'
-    piston_plugin name, options
-  when 'braid'
-    # TODO
-  when 'git'
-    plugin name, options.merge(:submodule => true)
-  end
+  puts "Installing plugin #{ name } : #{options.inspect}"
+  plugin name, options
 end
 
 def install_rails (options)
@@ -193,7 +180,6 @@ end
 # Delete unnecessary files
 run "rm README"
 run "rm public/index.html"
-run "rm public/favicon.ico"
 
 # Set up git repository
 # must do before running piston
@@ -276,14 +262,20 @@ gem "ffmike-query_trace",
   :source => 'http://gems.github.com',
   :emv => 'development'
 
-# test only
 gem "timocratic-test_benchmark", 
   :lib => 'test_benchmark', 
   :source => 'http://gems.github.com',
-  :env => 'test'
+  :env => 'development'
+gem "thoughtbot-shoulda",
+  :env => 'development',
+  :lib => 'shoulda',
+  :source => 'http://gems.github.com'
+gem "mocha",
+  :env => 'development', 
+  :version => '0.9.5'
 
 # assume gems are already on dev box, so don't install    
-# rake("gems:install", :sudo => true)
+rake("gems:install", :sudo => true)
 
 commit_state "Added plugins and gems"
 
@@ -1038,8 +1030,6 @@ development:
   encoding: unicode
   database: #{current_app_name}_development
   pool: 5
-  username: postgres
-  password:
 
   # Connect on a TCP socket. Omitted by default since the client uses a
   # domain socket that doesn't need configuration. Windows does not have
@@ -1064,32 +1054,24 @@ test: &TEST
   encoding: unicode
   database: #{current_app_name}_test
   pool: 5
-  username: postgres
-  password:
 
 test2:
   adapter: postgresql
   encoding: unicode
   database: #{current_app_name}_test2
   pool: 5
-  username: postgres
-  password:
 
 test3:
   adapter: postgresql
   encoding: unicode
   database: #{current_app_name}_test3
   pool: 5
-  username: postgres
-  password:
 
 test4:
   adapter: postgresql
   encoding: unicode
   database: #{current_app_name}_test4
   pool: 5
-  username: postgres
-  password:
 
 production:
   adapter: postgresql
